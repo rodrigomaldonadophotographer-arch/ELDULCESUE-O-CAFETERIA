@@ -20,3 +20,18 @@ function flash(){const f=CONFIG.promocionFlash;if(!f)return;const p=productos.fi
 function detalles(){const partes=[];if(CONFIG.horario)partes.push(`<p><b>Horario:</b> ${texto(CONFIG.horario)}</p>`);if(CONFIG.direccion)partes.push(`<p><b>Dirección:</b> ${texto(CONFIG.direccion)}</p>`);for(const [url,label] of [[CONFIG.mapaUrl,'Ver ubicación'],[CONFIG.instagram,'Instagram'],[CONFIG.facebook,'Facebook'],[CONFIG.googleResenas,'Reseñas en Google']])if(url&&/^https:\/\//.test(url))partes.push(`<p><a href="${texto(url)}" target="_blank" rel="noopener noreferrer">${label}</a></p>`);$('businessDetails').innerHTML=partes.join('')||'<p>Horario, dirección y redes sociales: pendientes de confirmar con la cafetería.</p>'}
 async function iniciar(){try{productos=await cargarProductos();render();flash()}catch(e){$('productGrid').innerHTML='<p>No se pudo cargar el catálogo. Abre el sitio desde GitHub Pages o un servidor local.</p>';console.error(e)}detalles();actualizarCarrito();$('search').oninput=render;$('categories').onclick=e=>{const b=e.target.closest('[data-cat]');if(b){categoria=b.dataset.cat;soloFavoritos=false;render()}};$('productGrid').onclick=e=>{const p=e.target.closest('[data-producto]'),f=e.target.closest('[data-favorito]');if(p)ficha(p.dataset.producto);if(f){const id=f.dataset.favorito;favoritos=favoritos.includes(id)?favoritos.filter(x=>x!==id):[...favoritos,id];guardar('favoritos',favoritos);render()}};$('favoritesFilter').onclick=()=>{soloFavoritos=!soloFavoritos;categoria='Todos';render()};$('cartBtn').onclick=renderCarrito;$('profileBtn').onclick=abrirPerfil;$('notificationBtn').onclick=abrirNotificaciones;$('closeDrawer').onclick=cerrar;$('overlay').onclick=cerrar;document.addEventListener('keydown',e=>{if(e.key==='Escape')cerrar()});if(mesa)avisar(`Mesa ${mesa} detectada. Pedido interno pendiente de conexión.`)}
 iniciar();
+
+
+// Solo efecto visual: no altera productos, carrito ni pedidos.
+(function activarFondoEnScroll(){
+  let pendiente=false;
+  function actualizar(){
+    const avance=Math.min(1,Math.max(0,window.scrollY/(window.innerHeight*0.9)));
+    document.documentElement.style.setProperty('--scroll-blur',(avance*13).toFixed(1)+'px');
+    document.documentElement.style.setProperty('--scroll-dim',(avance*0.27).toFixed(3));
+    pendiente=false;
+  }
+  window.addEventListener('scroll',()=>{if(!pendiente){pendiente=true;requestAnimationFrame(actualizar)}},{passive:true});
+  window.addEventListener('resize',actualizar,{passive:true});
+  actualizar();
+})();
