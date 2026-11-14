@@ -1,3 +1,4 @@
+import {promocionVigente} from './promociones.js';
 import {CONFIG} from './config.js';
 import {cargarProductos,categorias,dinero,texto} from './catalogo.js';
 import {leer,guardar} from './storage.js';
@@ -70,7 +71,37 @@ const msg=[
 ].join('\n');if(CONFIG.whatsapp){window.location.href='https://wa.me/'+CONFIG.whatsapp+'?text='+encodeURIComponent(msg)}else{navigator.clipboard?.writeText(msg).then(()=>avisar('Pedido copiado. Falta configurar WhatsApp oficial.')).catch(()=>prompt('Copia el pedido:',msg));if(!navigator.clipboard)prompt('Copia el pedido:',msg)}}
 function abrirPerfil(){abrir('Mi perfil',`<p class="muted">Guarda tus datos para no volver a escribirlos en este dispositivo. Al conectar Supabase se habilitará la cuenta segura entre dispositivos.</p><label>Nombre</label><input class="field" id="pName" value="${texto(perfil.nombre||'')}" placeholder="Nombre"><label>Celular</label><input class="field" id="pPhone" type="tel" value="${texto(perfil.telefono||'')}" placeholder="10 dígitos"><label>Domicilio para entregas (opcional)</label><textarea class="field" id="pAddress" rows="3">${texto(perfil.domicilio||'')}</textarea><label class="checkline"><input type="checkbox" id="pPromo" ${leer('promoConsent',false)?'checked':''}>Me interesa recibir promociones (requiere activar notificaciones cuando estén disponibles)</label><button class="button" id="saveProfile">Guardar mis datos</button><p class="muted">Los datos quedan guardados solo en este navegador. No se envían a ningún servidor.</p>`);$('saveProfile').onclick=()=>{const nombre=$('pName').value.trim(),tel=$('pPhone').value.replace(/\D/g,'');if(!nombre||tel.length!==10){avisar('Indica nombre y teléfono de 10 dígitos');return}const primera=!perfil.nombre;perfil={nombre,telefono:tel,domicilio:$('pAddress').value.trim()};guardar('perfil',perfil);guardar('promoConsent',$('pPromo').checked);cerrar();avisar(primera?`¡Bienvenido a la familia de El Dulce Sueño, ${nombre}!`:'Datos actualizados correctamente')}}
 function abrirNotificaciones(){let activo=leer('avisosActivos',false);abrir('Notificaciones',`<p>Controla los avisos de promociones Flash cuando estén disponibles.</p><p class="note">El permiso del teléfono y el envío real de notificaciones se habilitarán al conectar el servicio push. Por ahora solo puedes guardar tu preferencia local.</p><button class="button" id="toggleAlerts">${activo?'Silenciar avisos promocionales':'Activar preferencia de avisos'}</button>`);$('toggleAlerts').onclick=()=>{activo=!activo;guardar('avisosActivos',activo);avisar(activo?'Preferencia activada; falta habilitar push':'Avisos silenciados en este dispositivo');cerrar()}}
-function flash(){const f=CONFIG.promocionFlash;if(!f)return;const p=productos.find(x=>x.id===f.id);if(!p)return;const vence=new Date(f.vence).getTime();if(!Number.isFinite(vence))return;function tick(){const restante=vence-Date.now();if(restante<=0){$('flashSection').hidden=true;clearInterval(promoTimer);return}$('flashSection').hidden=false;$('flashCountdown').textContent=`Termina en ${Math.floor(restante/3600000)}h ${Math.floor(restante%3600000/60000)}m ${Math.floor(restante%60000/1000)}s`}$('flashTitle').textContent=f.titulo||p.nombre;$('flashDescription').textContent=f.descripcion||'';$('flashPrice').textContent=dinero(f.precio);$('flashImage').src=f.imagen||p.imagen||'assets/local/interior-principal.jpg';$('flashAdd').onclick=()=>ficha(p.id);tick();promoTimer=setInterval(tick,1000)}
+async function flash(){
+  const seccion=$('flashSection');
+  try{
+    const f=await promocionVigente();
+    if(!f){seccion.hidden=true;return;}
+    const p=productos.find(x=>x.supabaseId===f.producto_id);
+    if(!p || !p.disponible){seccion.hidden=true;return;}
+    const vence=new Date(f.termina_en).getTime();
+    if(!Number.isFinite(vence)||vence<=Date.now()){seccion.hidden=true;return;}
+    clearInterval(promoTimer);
+    $('flashTitle').textContent=f.titulo;
+    $('flashDescription').textContent=f.descripcion||'';
+    $('flashPrice').textContent=`Precio promocional anunciado: ${dinero(Number(f.precio_promocion))}`;
+    $('flashImage').src=f.imagen_url||p.imagen||'assets/local/interior-principal.jpg';
+    // Hasta contar con cobro de promociones validado en servidor,
+    // nunca introducir el descuento en el carrito a precio incorrecto.
+    $('flashAdd').textContent='Consultar promoción';
+    $('flashAdd').onclick=()=>{
+      const mensaje=`Hola, quiero consultar la promoción ${f.titulo} de El Dulce Sueño (${dinero(Number(f.precio_promocion))}).`;
+      if(CONFIG.whatsapp) window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(mensaje)}`,'_blank','noopener');
+      else avisar('Falta configurar WhatsApp');
+    };
+    function tick(){
+      const ms=vence-Date.now();
+      if(ms<=0){seccion.hidden=true;clearInterval(promoTimer);return;}
+      seccion.hidden=false;
+      $('flashCountdown').textContent=`Termina en ${Math.floor(ms/3600000)}h ${Math.floor(ms%3600000/60000)}m ${Math.floor(ms%60000/1000)}s`;
+    }
+    tick();promoTimer=setInterval(tick,1000);
+  }catch(e){console.warn('Promoción no disponible',e);seccion.hidden=true;}
+}
 function detalles(){
   const filas=[];
   const iconos={
