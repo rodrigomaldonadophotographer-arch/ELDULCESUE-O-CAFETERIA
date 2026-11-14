@@ -14,6 +14,10 @@ export const CONFIG = {
   facebook: '',
   googleResenas: '',
   moneda: 'MXN',
+  
+  // Notificaciones push de Barrio Digital
+  vapidPublicKey: 'a75a03ff7aeed2feec3a913e79ec7ee574a363e267c3f8c603ad1c469f37bfcc',
+
   // Ejemplo: abrir ?mesa=3 reconoce el origen, pero NO envía pedidos a caja hasta integrar backend.
   // No publicar QR de mesas para pedidos internos antes de habilitar la conexión.
   modoDemo: true,
