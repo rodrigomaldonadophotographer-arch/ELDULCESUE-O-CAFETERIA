@@ -5,6 +5,28 @@ import {leer,guardar} from './storage.js';
 let catalogoDisponible=false,productos=[],categoria='Todos',soloFavoritos=false,carrito=leer('carrito',[]),favoritos=leer('favoritos',[]),perfil=leer('perfil',{}),promoTimer=null;
 const $=id=>document.getElementById(id);
 const mesa=new URLSearchParams(location.search).get('mesa');
+// Se compara únicamente al iniciar una nueva carga del menú.
+// No hay consultas periódicas ni recargas automáticas durante la visita.
+const CLAVE_VERSION_MENU = 'bd_dulce_sueno_catalogo_ultima_apertura_v1';
+function huellaMenu(lista) {
+  return JSON.stringify(lista.map(p => [
+    p.supabaseId, p.id, p.nombre, p.categoria, p.descripcion,
+    p.precio, p.disponible, p.imagen
+  ]).sort((a,b) => String(a[0]).localeCompare(String(b[0]))));
+}
+function comprobarNuevaApertura(lista) {
+  try {
+    const actual = huellaMenu(lista);
+    const anterior = localStorage.getItem(CLAVE_VERSION_MENU);
+    localStorage.setItem(CLAVE_VERSION_MENU, actual);
+    if (anterior !== null && anterior !== actual) {
+      setTimeout(() => avisar('Menú actualizado. Revisa los precios y la disponibilidad antes de pedir.'), 700);
+    }
+  } catch (e) {
+    console.warn('No se pudo recordar la última versión del menú', e);
+  }
+}
+
 function avisar(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>$('toast').classList.remove('show'),3600)}
 function abrir(t,html){$('drawerTitle').textContent=t;$('drawerBody').innerHTML=html;$('drawer').hidden=false;$('overlay').hidden=false;document.body.style.overflow='hidden'}
 function cerrar(){$('drawer').hidden=true;$('overlay').hidden=true;document.body.style.overflow=''}
@@ -119,7 +141,7 @@ function detalles(){
     if(url){link.href=url;link.title=link.getAttribute('aria-label').replace(' (enlace de muestra)','').replace(' (número de muestra)','');}
   }
 }
-async function iniciar(){try{productos=await cargarProductos();catalogoDisponible=true;carrito=carrito.filter(x=>{const p=productos.find(p=>p.id===x.id);return p&&p.disponible&&p.precio!==null&&!x.variante&&!(x.extras||[]).length;}).map(x=>({...x,precio:productos.find(p=>p.id===x.id).precio}));actualizarCarrito();render();pintarPortada();flash()}catch(e){catalogoDisponible=false;carrito=[];actualizarCarrito();$('productGrid').innerHTML='<p>No pudimos verificar los productos en este momento. Intenta de nuevo en unos minutos. No se recibirán pedidos sin precios confirmados.</p>';console.error(e)}detalles();actualizarCarrito();$('search').oninput=render;$('categories').onclick=e=>{const b=e.target.closest('[data-cat]');if(b){seleccionarCategoria(b.dataset.cat)}};$('productGrid').onclick=e=>{const p=e.target.closest('[data-producto]'),f=e.target.closest('[data-favorito]');if(p)ficha(p.dataset.producto);if(f){const id=f.dataset.favorito;favoritos=favoritos.includes(id)?favoritos.filter(x=>x!==id):[...favoritos,id];guardar('favoritos',favoritos);render()}};$('favoritesFilter').onclick=()=>{soloFavoritos=!soloFavoritos;categoria='Todos';render()};$('categoryNext').onclick=e=>{const siguiente=e.target.closest('[data-next-cat]');if(siguiente){seleccionarCategoria(siguiente.dataset.nextCat);return}if(e.target.closest('[data-back-categories]'))$('explorar').scrollIntoView({behavior:'smooth',block:'start'})};$('heroCategories').onclick=e=>{const b=e.target.closest('[data-hero-cat]');if(b)seleccionarCategoria(b.dataset.heroCat)};$('menuToggle').onclick=()=>$('explorar').scrollIntoView({behavior:'smooth',block:'start'});$('bottomFavorites').onclick=()=>{soloFavoritos=true;categoria='Todos';render();$('menu').scrollIntoView({behavior:'smooth'})};$('bottomOrder').onclick=renderCarrito;$('cartBtn').onclick=renderCarrito;$('profileBtn').onclick=abrirPerfil;$('notificationBtn').onclick=abrirNotificaciones;$('closeDrawer').onclick=cerrar;$('overlay').onclick=cerrar;document.addEventListener('keydown',e=>{if(e.key==='Escape')cerrar()});if(mesa)avisar(`Mesa ${mesa} detectada. Pedido interno pendiente de conexión.`)}
+async function iniciar(){try{productos=await cargarProductos();catalogoDisponible=true;comprobarNuevaApertura(productos);carrito=carrito.filter(x=>{const p=productos.find(p=>p.id===x.id);return p&&p.disponible&&p.precio!==null&&!x.variante&&!(x.extras||[]).length;}).map(x=>({...x,precio:productos.find(p=>p.id===x.id).precio}));actualizarCarrito();render();pintarPortada();flash()}catch(e){catalogoDisponible=false;carrito=[];actualizarCarrito();$('productGrid').innerHTML='<p>No pudimos verificar los productos en este momento. Intenta de nuevo en unos minutos. No se recibirán pedidos sin precios confirmados.</p>';console.error(e)}detalles();actualizarCarrito();$('search').oninput=render;$('categories').onclick=e=>{const b=e.target.closest('[data-cat]');if(b){seleccionarCategoria(b.dataset.cat)}};$('productGrid').onclick=e=>{const p=e.target.closest('[data-producto]'),f=e.target.closest('[data-favorito]');if(p)ficha(p.dataset.producto);if(f){const id=f.dataset.favorito;favoritos=favoritos.includes(id)?favoritos.filter(x=>x!==id):[...favoritos,id];guardar('favoritos',favoritos);render()}};$('favoritesFilter').onclick=()=>{soloFavoritos=!soloFavoritos;categoria='Todos';render()};$('categoryNext').onclick=e=>{const siguiente=e.target.closest('[data-next-cat]');if(siguiente){seleccionarCategoria(siguiente.dataset.nextCat);return}if(e.target.closest('[data-back-categories]'))$('explorar').scrollIntoView({behavior:'smooth',block:'start'})};$('heroCategories').onclick=e=>{const b=e.target.closest('[data-hero-cat]');if(b)seleccionarCategoria(b.dataset.heroCat)};$('menuToggle').onclick=()=>$('explorar').scrollIntoView({behavior:'smooth',block:'start'});$('bottomFavorites').onclick=()=>{soloFavoritos=true;categoria='Todos';render();$('menu').scrollIntoView({behavior:'smooth'})};$('bottomOrder').onclick=renderCarrito;$('cartBtn').onclick=renderCarrito;$('profileBtn').onclick=abrirPerfil;$('notificationBtn').onclick=abrirNotificaciones;$('closeDrawer').onclick=cerrar;$('overlay').onclick=cerrar;document.addEventListener('keydown',e=>{if(e.key==='Escape')cerrar()});if(mesa)avisar(`Mesa ${mesa} detectada. Pedido interno pendiente de conexión.`)}
 iniciar();
 
 
