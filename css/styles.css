@@ -137,3 +137,26 @@ body{padding-bottom:0}
 }
 @media(max-width:390px){.hero-categories{gap:4px}.category-tile span{font-size:9px}.welcome-panel h1{font-size:32px}.product-card{height:calc(100svh - 145px)}}
 @media(prefers-reduced-motion:reduce){.category-tile img{transition:none}}
+
+/* V5: portada despejada, categorías independientes, PWA */
+.hero{display:block;position:relative;min-height:0;height:clamp(500px,calc(100svh - 84px),950px);padding:0;background:transparent;overflow:hidden}
+.hero-photo{display:block;position:absolute;inset:0;background:url('../assets/local/portada-cafeteria.png') center center/contain no-repeat;transform:none}
+.hero-shade,.hero-content{display:none!important}
+.category-showcase{position:relative;z-index:1;max-width:1190px;margin:0 auto 26px;padding:24px 24px 32px;background:rgba(255,248,251,.82);border:1px solid #ffffffa8;border-radius:0 0 24px 24px;box-shadow:0 14px 35px #32102145;backdrop-filter:blur(8px);scroll-margin-top:90px}
+.category-intro{text-align:center;margin-bottom:18px}
+.category-intro span{font:700 11px 'DM Sans',Arial,sans-serif;letter-spacing:.24em;color:#008c93}
+.category-intro h2{font:700 clamp(24px,3vw,37px) 'DM Sans',Arial,sans-serif;color:#8f1d50;margin:7px 0 0}
+.hero-categories{grid-template-columns:repeat(3,minmax(0,1fr));max-width:1000px;gap:15px}
+.category-tile{aspect-ratio:1.55;border-radius:17px}
+.category-tile span{font-family:'DM Sans',Arial,sans-serif;font-weight:700;font-size:clamp(16px,1.8vw,21px)}
+@media(max-width:650px){
+ .hero{height:calc(100svh - 66px);min-height:400px;max-height:950px;padding:0}
+ .hero-photo{background-size:contain;background-position:center center}
+ .category-showcase{padding:19px 11px 24px;margin:0 7px 15px;border-radius:0 0 17px 17px;scroll-margin-top:66px}
+ .category-intro{margin-bottom:12px}
+ .category-intro h2{font-size:24px}
+ .hero-categories{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .category-tile{aspect-ratio:1.05;border-radius:13px}
+ .category-tile span{font-size:clamp(13px,3.8vw,17px);padding:9px 4px}
+}
+@media(max-width:390px){.hero-categories{gap:9px}.category-tile span{font-size:13px}}
