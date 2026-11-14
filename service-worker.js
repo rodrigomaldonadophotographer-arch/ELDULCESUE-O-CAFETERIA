@@ -53,3 +53,55 @@ self.addEventListener('fetch', event => {
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
+
+
+/* Barrio Digital · Notificaciones push */
+
+self.addEventListener('push', event => {
+  let datos = {};
+
+  try {
+    datos = event.data ? event.data.json() : {};
+  } catch (error) {
+    console.warn('Notificación sin datos JSON válidos', error);
+  }
+
+  const titulo = datos.title || 'El Dulce Sueño';
+
+  const opciones = {
+    body: datos.body || 'Tenemos novedades para ti.',
+    icon: './assets/icons/icon-192.png',
+    badge: './assets/icons/icon-192.png',
+    tag: datos.tag || 'bd-promocion',
+    data: {
+      url: './'
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(titulo, opciones)
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+
+  event.waitUntil((async () => {
+    const destino = new URL('./', self.registration.scope).href;
+
+    const ventanas = await clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    });
+
+    for (const ventana of ventanas) {
+      if (ventana.url.startsWith(self.registration.scope)) {
+        await ventana.focus();
+        return;
+      }
+    }
+
+    await clients.openWindow(destino);
+  })());
+});
+
