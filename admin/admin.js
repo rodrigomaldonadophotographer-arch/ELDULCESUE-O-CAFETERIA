@@ -1,7 +1,7 @@
 import {CONFIG} from '../js/config.js';
 const $=id=>document.getElementById(id);
 const base=CONFIG.supabaseUrl;
-let token=null,productos=[];
+let token=null,productos=[],categoriaActual=null;
 function status(s){$('status').textContent=s;}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 async function api(path,options={}){
@@ -21,12 +21,33 @@ async function login(email,password){
 async function cargar(){
  productos=await api(`/rest/v1/bd_productos?select=id,codigo,nombre,categoria,descripcion,precio,disponible,activo,imagen_url&negocio_id=eq.${CONFIG.negocioId}&order=codigo.asc`);
  $('count').textContent=`${productos.length} productos`;
- mostrarProductos();mostrarSelector();await cargarPromos();
+ mostrarCategorias();mostrarProductos();mostrarSelector();await cargarPromos();
+}
+const CATEGORIAS=['Cafés','Frappés','Malteadas','Smoothies','Postres','Otras bebidas'];
+function categorias(){return [...new Set([...CATEGORIAS,...productos.map(p=>p.categoria).filter(Boolean)])];}
+function mostrarCategorias(){
+ $('categoryList').innerHTML=categorias().map(c=>`<button class="category-tile" data-category="${esc(c)}"><strong>${esc(c)}</strong><span>${productos.filter(p=>p.categoria===c).length} productos</span><span>Ver y administrar →</span></button>`).join('');
+ $('categoryList').hidden=Boolean(categoriaActual);$('categoryDetail').hidden=!categoriaActual;
+ $('categoryTitle').textContent=categoriaActual||'';
 }
 function mostrarProductos(){
+ if(!categoriaActual){$('products').innerHTML='';return;}
  const q=$('search').value.toLocaleLowerCase('es');
- $('products').innerHTML=productos.filter(p=>(p.nombre+' '+p.categoria).toLocaleLowerCase('es').includes(q)).map(p=>`<article class="item" data-id="${p.id}"><img src="${esc(p.imagen_url||'')}" alt="" loading="lazy"><div><h3>${esc(p.nombre)}</h3><p class="muted">${esc(p.codigo)} · ${esc(p.categoria)}</p><div class="fields"><label>Precio ($ MXN)<input data-field="precio" type="number" min="0" step="0.01" value="${p.precio??''}" placeholder="Pendiente"></label><label>Disponibilidad<select data-field="disponible"><option value="true" ${p.disponible?'selected':''}>Disponible</option><option value="false" ${!p.disponible?'selected':''}>No disponible</option></select></label><label class="wide">Descripción<input data-field="descripcion" maxlength="500" value="${esc(p.descripcion||'')}"></label><label class="wide">URL de fotografía<input data-field="imagen_url" type="url" value="${esc(p.imagen_url||'')}"></label></div><button data-save="${p.id}">Guardar cambios</button></div></article>`).join('');
+ $('products').innerHTML=productos.filter(p=>p.categoria===categoriaActual&&p.nombre.toLocaleLowerCase('es').includes(q)).map(p=>`<article class="item" data-id="${p.id}"><img src="${esc(p.imagen_url||'')}" alt="" loading="lazy"><div><h3>${esc(p.nombre)} <span class="state">${!p.activo?'Oculto':!p.disponible?'No disponible':'Visible'}</span></h3><p class="muted">${esc(p.codigo||'Sin código')} · ${esc(p.categoria)}</p><div class="fields"><label>Nombre<input data-field="nombre" maxlength="150" value="${esc(p.nombre)}"></label><label>Precio ($ MXN)<input data-field="precio" type="number" min="0" step="0.01" value="${p.precio??''}" placeholder="Pendiente"></label><label>Disponibilidad<select data-field="disponible"><option value="true" ${p.disponible?'selected':''}>Disponible</option><option value="false" ${!p.disponible?'selected':''}>No disponible</option></select></label><label class="wide">Descripción<input data-field="descripcion" maxlength="500" value="${esc(p.descripcion||'')}"></label><label class="wide">URL de fotografía<input data-field="imagen_url" type="url" value="${esc(p.imagen_url||'')}"></label></div><div class="actions"><button data-save="${p.id}">Guardar cambios</button><button class="secondary" data-toggle="${p.id}">${p.activo?'Ocultar':'Activar'}</button><button class="danger" data-delete="${p.id}">Eliminar</button></div></div></article>`).join('')||'<p>No hay productos en esta categoría.</p>';
 }
+function abrirCategoria(c){categoriaActual=c;$('search').value='';$('newProductForm').hidden=true;mostrarCategorias();mostrarProductos();}
+$('categoryList').onclick=e=>{const b=e.target.closest('[data-category]');if(b)abrirCategoria(b.dataset.category);};
+$('backCategories').onclick=()=>{categoriaActual=null;$('newProductForm').hidden=true;mostrarCategorias();mostrarProductos();};
+$('addProduct').onclick=()=>{$('newProductForm').hidden=false;$('newName').focus();};
+$('cancelNew').onclick=()=>{$('newProductForm').hidden=true;};
+$('newProductForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{
+ const nombre=$('newName').value.trim(),raw=$('newPrice').value.trim(),precio=raw===''?null:Number(raw),imagen_url=$('newImage').value.trim()||null;
+ if(!nombre||!categoriaActual)throw new Error('Escribe el nombre y selecciona una categoría.');
+ if(precio!==null&&(!Number.isFinite(precio)||precio<0||!/^[0-9]+(\.[0-9]{1,2})?$/.test(raw)))throw new Error('Precio inválido.');
+ if(imagen_url&&!/^https:\/\//i.test(imagen_url))throw new Error('La fotografía debe ser una URL HTTPS.');
+ await api('/rest/v1/bd_productos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({negocio_id:CONFIG.negocioId,nombre,categoria:categoriaActual,descripcion:$('newDescription').value.trim(),precio,imagen_url,activo:true,disponible:precio!==null})});
+ $('newProductForm').reset();$('newProductForm').hidden=true;status('Producto agregado a '+categoriaActual+'.');await cargar();
+ }catch(err){status(err.message)}finally{b.disabled=false;}};
 function mostrarSelector(){ $('promoProduct').innerHTML=productos.filter(p=>p.activo&&p.disponible&&p.precio!==null).map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join(''); }
 async function guardarProducto(id){
  const el=[...document.querySelectorAll('.item')].find(x=>x.dataset.id===id);if(!el)return;
@@ -36,7 +57,8 @@ async function guardarProducto(id){
  const disponible=valor('disponible')==='true';if(disponible&&precio===null)throw new Error('Configura el precio antes de habilitar la venta.');
  const imagen_url=valor('imagen_url').trim()||null;
  if(imagen_url&&!/^https:\/\//i.test(imagen_url))throw new Error('La foto debe tener una URL HTTPS.');
- const payload={precio,disponible,descripcion:valor('descripcion').trim(),imagen_url};
+ const nombre=valor('nombre').trim();if(!nombre)throw new Error('El nombre es obligatorio.');
+ const payload={nombre,precio,disponible,descripcion:valor('descripcion').trim(),imagen_url};
  await api(`/rest/v1/bd_productos?id=eq.${id}&negocio_id=eq.${CONFIG.negocioId}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(payload)});
  status('Producto actualizado. El menú mostrará el cambio al volver a cargar.');await cargar();
 }
@@ -47,7 +69,15 @@ async function cargarPromos(){
 $('loginForm').onsubmit=async e=>{e.preventDefault();status('Verificando acceso…');try{await login($('email').value,$('password').value);$('password').value='';status('Sesión iniciada.');}catch(err){status(err.message);}};
 $('logout').onclick=()=>{token=null;productos=[];$('dashboard').hidden=true;$('login').hidden=false;status('Sesión cerrada.');};
 $('search').oninput=mostrarProductos;
-$('products').onclick=async e=>{const b=e.target.closest('[data-save]');if(!b)return;b.disabled=true;try{await guardarProducto(b.dataset.save)}catch(err){status(err.message)}finally{b.disabled=false}};
+$('products').onclick=async e=>{
+ const b=e.target.closest('[data-save],[data-toggle],[data-delete]');if(!b)return;
+ b.disabled=true;try{
+ if(b.dataset.save){await guardarProducto(b.dataset.save);}
+ else if(b.dataset.toggle){const p=productos.find(x=>x.id===b.dataset.toggle);await api(`/rest/v1/bd_productos?id=eq.${p.id}&negocio_id=eq.${CONFIG.negocioId}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({activo:!p.activo})});status(p.activo?'Producto oculto del menú.':'Producto activado.');await cargar();}
+ else if(b.dataset.delete){const p=productos.find(x=>x.id===b.dataset.delete);if(!confirm(`¿Eliminar definitivamente «${p.nombre}»? Esta acción no se puede deshacer.`))return;
+ await api(`/rest/v1/bd_productos?id=eq.${p.id}&negocio_id=eq.${CONFIG.negocioId}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});status('Producto eliminado.');await cargar();}
+ }catch(err){status(err.message)}finally{b.disabled=false;}
+};
 document.querySelector('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(!b)return;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('selected',x===b));$('productosPanel').hidden=b.dataset.tab!=='productos';$('promocionesPanel').hidden=b.dataset.tab!=='promociones';};
 $('promoForm').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{
  const product=productos.find(p=>p.id===$('promoProduct').value);if(!product||!product.disponible||product.precio===null)throw new Error('Producto no disponible');
