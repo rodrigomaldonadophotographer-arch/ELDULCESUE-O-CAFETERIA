@@ -125,7 +125,9 @@ async function enviarWhatsApp(){
     aviso.className='note';
     aviso.setAttribute('role','alert');
     aviso.style.margin='12px 0';
-    aviso.innerHTML='<strong>Revisa los cambios de tu pedido</strong><p>Algunos precios o productos cambiaron desde que abriste el menú. No enviaremos tu pedido hasta que revises los importes vigentes.</p><button class="button" type="button" id="reviewOrderNow">Revisar y actualizar carrito</button>';
+    aviso.innerHTML='<strong>Revisa los cambios de tu pedido</strong><p>
+'Tu pedido merece nuestra atención\n\nHemos realizado algunos ajustes en nuestro menú. Te invitamos a revisar los detalles de tu pedido antes de confirmarlo.'
+</p><button class="button" type="button" id="reviewOrderNow">Revisar y actualizar carrito</button>';
     boton.before(aviso);
     boton.textContent='Pendiente de revisión';
     aviso.querySelector('button').onclick=()=>{
