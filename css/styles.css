@@ -160,3 +160,66 @@ body{padding-bottom:0}
  .category-tile span{font-size:clamp(13px,3.8vw,17px);padding:9px 4px}
 }
 @media(max-width:390px){.hero-categories{gap:9px}.category-tile span{font-size:13px}}
+
+/* V6: una sola portada en móvil y navegación entre categorías */
+.category-next{margin:25px 0 6px;padding:22px;background:rgba(255,242,248,.91);border:1px solid #eab6cc;border-radius:16px;text-align:center}
+.category-next-title{font-weight:700;color:#762044;font-size:16px;margin-bottom:14px}
+.category-next-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.category-next-actions button{border-radius:9px;padding:13px 19px;font-weight:700;border:1px solid #a92361}
+.next-category-button{background:#a92361;color:#fff}
+.back-categories-button{background:#fff;color:#8a2250}
+@media(max-width:650px){
+ /* El fondo desenfocado no debe repetir la misma portada */
+ body::before{background-image:url('../assets/local/interior-principal.jpg');background-size:cover}
+ .hero{height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:1364/1153;padding:0!important;background:#f5d3dd}
+ .hero-photo{inset:0!important;background-image:url('../assets/local/portada-cafeteria.png');background-size:100% 100%!important;background-position:center!important;background-repeat:no-repeat!important}
+ .category-showcase{margin-top:0}
+ .category-next{padding:15px 10px;margin-top:16px}
+ .category-next-actions{flex-direction:column}
+ .category-next-actions button{width:100%}
+ .categories{position:sticky;top:65px;z-index:12;background:rgba(255,247,251,.97);padding:8px 2px 11px;border-radius:8px;box-shadow:0 5px 12px #48102d1a}
+}
+
+/* V7: datos y redes en una sola línea, debajo del domicilio */
+.visit #businessDetails p{margin:8px 0;overflow-wrap:anywhere}
+.visit #businessDetails a{color:#8e2454;text-underline-offset:3px}
+.visit .demo-contact-note{font-size:11px;line-height:1.45;opacity:.8;margin-top:12px}
+.social-links{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;margin-top:20px}
+.social-link{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#9b385c;color:white!important;text-decoration:none!important;font-family:Arial,sans-serif;font-size:19px;font-weight:700;transition:transform .2s,background .2s}
+.social-link:hover,.social-link:focus-visible{transform:translateY(-2px);background:#c12e72}
+#socialWhatsApp{font-size:12px;background:#267d67}
+@media(max-width:520px){.social-links{gap:9px}.social-link{width:37px;height:37px}}
+
+
+/* V8: tarjeta Visítanos aprobada. Conserva la fotografía auténtica del negocio. */
+.visit{max-width:1160px;margin:24px auto 72px;min-height:0;grid-template-columns:1fr 1fr;background:#fff6f8;border:1px solid #f2d6e0;border-radius:18px;overflow:hidden;box-shadow:0 16px 42px rgba(84,26,48,.14)}
+.visit-info{padding:36px 42px 30px!important;min-width:0}
+.visit-eyebrow{display:flex;align-items:center;gap:18px;color:#13727b;font-size:12px;font-weight:800;letter-spacing:.14em}
+.visit-eyebrow::after{content:'';height:1px;background:#bd7b94;flex:1}
+.visit h2{font-family:'Playfair Display',Georgia,serif;font-weight:600;color:#92254f;font-size:clamp(30px,3.3vw,48px);line-height:1.14;margin:13px 0 10px}
+.visit .visit-intro{color:#44313b;font-size:15px;line-height:1.55;margin:0 0 20px}
+.visit-details{display:flex;flex-direction:column}
+.visit-detail{display:flex;align-items:center;gap:15px;padding:10px 0;border-bottom:1px solid #ddb6c4}
+.visit-detail-icon{flex:0 0 43px;width:43px;height:43px;border-radius:11px;background:#a32156;color:#fff;display:grid;place-items:center}
+.visit-detail-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.visit-detail>div{min-width:0;display:flex;flex-direction:column;gap:2px;line-height:1.3}
+.visit-detail strong{color:#9e2454;font-size:15px}
+.visit-detail span:not(.visit-detail-icon),.visit-detail a{color:#31242a!important;font-size:14px;font-weight:500;overflow-wrap:anywhere;text-decoration:none!important}
+.visit .demo-contact-note{font-size:10px;color:#806a74;line-height:1.3;margin:9px 0 2px;opacity:1}
+.visit-social-heading{display:flex;align-items:center;gap:10px;color:#46323b;font-weight:700;font-size:13px;text-align:center;margin:13px 0 0}
+.visit-social-heading::before,.visit-social-heading::after{content:'';height:1px;background:#d7a6b8;flex:1}
+.visit .social-links{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:nowrap;margin:15px 0 0}
+.visit .social-link{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:11px;color:white!important;font-size:29px;box-shadow:0 3px 9px #521d3224;text-decoration:none!important}
+.visit .social-facebook{background:#1877f2}
+.visit .social-instagram{background:linear-gradient(135deg,#6f38c7,#dc2795,#ffae46)}
+.visit .social-tiktok{background:#19191c}
+.visit #socialWhatsApp{background:#14b958;font-size:21px}
+.visit-photo{min-height:100%;overflow:hidden}
+.visit .visit-photo img{display:block;width:100%;height:100%;max-height:none;min-height:520px;object-fit:cover;object-position:center 48%}
+@media(max-width:760px){
+ .visit{grid-template-columns:1fr;margin:18px 12px 85px;border-radius:15px}
+ .visit-info{padding:25px 23px!important}
+ .visit h2{font-size:clamp(28px,8vw,39px)}
+ .visit .visit-photo img{min-height:0;height:310px;object-position:center 43%}
+}
+@media(max-width:380px){.visit .social-links{gap:13px}.visit-info{padding:22px 18px!important}.visit .social-link{width:40px;height:40px;flex-basis:40px}}
