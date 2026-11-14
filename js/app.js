@@ -5,6 +5,47 @@ import {leer,guardar} from './storage.js';
 let catalogoDisponible=false,productos=[],categoria='Todos',soloFavoritos=false,carrito=leer('carrito',[]),favoritos=leer('favoritos',[]),perfil=leer('perfil',{}),promoTimer=null;
 const $=id=>document.getElementById(id);
 const mesa=new URLSearchParams(location.search).get('mesa');
+const INACTIVIDAD_MS = 30 * 60 * 1000;
+let ultimaActividad = Date.now();
+let inicioAusencia = null;
+let comprobandoRegreso = false;
+let revisionPendiente = false;
+// Una sesión activa nunca recibe cambios de precio en segundo plano.
+for (const evento of ['pointerdown', 'keydown', 'scroll', 'touchstart']) {
+  document.addEventListener(evento, () => { ultimaActividad = Date.now(); }, {passive:true});
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) inicioAusencia = Date.now();
+  else void comprobarRegreso();
+});
+window.addEventListener('focus', () => { void comprobarRegreso(); });
+async function comprobarRegreso() {
+  if (!catalogoDisponible || document.hidden || comprobandoRegreso) return;
+  const ahora = Date.now();
+  const desde = inicioAusencia ?? ultimaActividad;
+  if (ahora - desde < INACTIVIDAD_MS) return;
+  inicioAusencia = null;
+  ultimaActividad = ahora;
+  comprobandoRegreso = true;
+  try {
+    if (carrito.length) {
+      revisionPendiente = true;
+      avisar('Antes de enviar tu pedido revisaremos precios y disponibilidad.');
+      return;
+    }
+    const nuevos = await cargarProductos();
+    const cambiaron = huellaMenu(nuevos) !== huellaMenu(productos);
+    productos = nuevos;
+    comprobarNuevaApertura(nuevos);
+    render();
+    pintarPortada();
+    if (cambiaron) await flash();
+  } catch (e) {
+    console.warn('No fue posible comprobar el menú al regresar.', e);
+    avisar('No se pudo actualizar el menú. Comprueba tu conexión.');
+  } finally { comprobandoRegreso = false; }
+}
+
 // Se compara únicamente al iniciar una nueva carga del menú.
 // No hay consultas periódicas ni recargas automáticas durante la visita.
 const CLAVE_VERSION_MENU = 'bd_dulce_sueno_catalogo_ultima_apertura_v1';
@@ -59,38 +100,70 @@ function pintarNavegacionCategorias(){
 function ficha(id){const p=productos.find(x=>x.id===id);if(!p||!p.disponible||p.precio===null){avisar('Producto pendiente de precio o disponibilidad');return;}const variantes=p.variantes||[],extras=p.extras||[];abrir(p.nombre,`<div class="product-photo" style="height:185px">${imagenProducto(p)}</div><p class="muted">${texto(p.categoria)}</p><h2>${texto(p.nombre)}</h2><strong>${dinero(p.precio)}</strong><label>Cantidad</label><input class="field" id="itemQty" type="number" min="1" max="50" value="1"><label>Presentación</label><select class="field" id="itemVariant"><option value="">Normal / sin variante</option>${variantes.map(v=>`<option value="${texto(v.nombre)}">${texto(v.nombre)} · ${dinero(v.precio)}</option>`).join('')}</select><label>Extras</label>${extras.length?extras.map((e,i)=>`<label class="checkline"><input type="checkbox" data-extra="${i}">${texto(e.nombre)} · ${dinero(e.precio)}</label>`).join(''):'<p class="muted">No hay extras con precio configurado.</p>'}<label>Indicaciones especiales</label><textarea class="field" id="itemNotes" rows="2" placeholder="Ej. sin hielo, sin azúcar…"></textarea><button class="button" id="addItem">Agregar al carrito</button><p class="muted">Las variantes y extras solo aparecerán con precios confirmados por el negocio.</p>`);$('addItem').onclick=()=>{let qty=Math.floor(Number($('itemQty').value));if(!Number.isFinite(qty)||qty<1||qty>50){avisar('Elige una cantidad entre 1 y 50');return}let v=variantes.find(x=>x.nombre===$('itemVariant').value);let sel=extras.filter((_,i)=>$('drawerBody').querySelector(`[data-extra="${i}"]`)?.checked);let unit=v?.precio??p.precio;if(unit!==null)unit+=sel.reduce((s,e)=>s+e.precio,0);carrito.push({clave:crypto.randomUUID?.()||String(Date.now()+Math.random()),id:p.id,nombre:p.nombre,cantidad:qty,precio:unit,variante:v?.nombre||'',extras:sel.map(e=>e.nombre),notas:$('itemNotes').value.trim()});actualizarCarrito();cerrar();avisar('Producto agregado al carrito')}}
 function renderCarrito(){const subtotal=carrito.reduce((s,x)=>s+(x.precio??0)*x.cantidad,0),sinPrecio=carrito.some(x=>x.precio===null);abrir('Tu carrito',carrito.length?`${mesa?`<div class="note"><b>Mesa ${texto(mesa)}</b>. Los pedidos directos a caja se habilitarán cuando conectemos el Centro de Ventas y Caja.</div>`:''}${carrito.map((x,i)=>`<div class="line"><div class="line-row"><strong>${texto(x.nombre)}</strong><button data-eliminar="${i}" aria-label="Eliminar producto">Quitar</button></div><p class="muted">${texto([x.variante,...x.extras,x.notas].filter(Boolean).join(' · ')||'Sin indicaciones')}</p><div class="line-row"><div class="qty"><button data-menos="${i}">−</button><b>${x.cantidad}</b><button data-mas="${i}">+</button></div><b>${x.precio===null?'Por confirmar':dinero(x.precio*x.cantidad)}</b></div></div>`).join('')}<h2>Subtotal conocido: ${dinero(subtotal)}</h2>${sinPrecio?'<p class="note">Hay productos sin precio confirmado. El total definitivo se acuerda con el negocio.</p>':''}${mesa?'<p class="note">Envío a Mesa pendiente de conexión. No se ha registrado ningún pedido en caja.</p><button class="button" disabled>Enviar pedido a Mesa ${texto(mesa)} · Próximamente</button>':`<label>¿Cómo recibirás tu pedido?</label><select id="orderType" class="field"><option value="recoger">Recoger en cafetería</option><option value="domicilio">Servicio a domicilio</option></select><div id="orderProfile"></div><button class="button" id="sendOrder">Preparar pedido para WhatsApp</button><p class="muted">La venta se confirma con la cafetería. No se cobra ni se registra en caja desde este menú.</p>`}`:'<p>Tu carrito está vacío. Explora el menú y agrega tus favoritos.</p>');$('drawerBody').querySelectorAll('[data-mas]').forEach(b=>b.onclick=()=>{carrito[+b.dataset.mas].cantidad++;actualizarCarrito();renderCarrito()});$('drawerBody').querySelectorAll('[data-menos]').forEach(b=>b.onclick=()=>{const i=+b.dataset.menos;carrito[i].cantidad--;if(!carrito[i].cantidad)carrito.splice(i,1);actualizarCarrito();renderCarrito()});$('drawerBody').querySelectorAll('[data-eliminar]').forEach(b=>b.onclick=()=>{carrito.splice(+b.dataset.eliminar,1);actualizarCarrito();renderCarrito()});if(!mesa&&carrito.length){$('orderType').onchange=renderPerfilPedido;renderPerfilPedido();$('sendOrder').onclick=enviarWhatsApp}}
 function renderPerfilPedido(){const domicilio=$('orderType').value==='domicilio';$('orderProfile').innerHTML=`${perfil.nombre?`<div class="profile-saved">Cliente: <b>${texto(perfil.nombre)}</b> · ${texto(perfil.telefono||'Sin teléfono')}<br><small>Confirma o modifica tus datos antes de enviar.</small></div>`:''}<label>Nombre del cliente</label><input id="orderName" class="field" value="${texto(perfil.nombre||'')}" placeholder="Tu nombre"><label>Celular</label><input id="orderPhone" class="field" type="tel" inputmode="tel" value="${texto(perfil.telefono||'')}" placeholder="10 dígitos">${domicilio?`<label>Dirección de entrega</label><textarea id="orderAddress" class="field" rows="2">${texto(perfil.domicilio||'')}</textarea>`:''}<label>Indicaciones del pedido</label><textarea id="orderNotes" class="field" rows="2" placeholder="Hora aproximada, referencias…"></textarea><label class="checkline"><input type="checkbox" id="saveInfo" checked>Recordar mis datos en este dispositivo</label>`}
-function enviarWhatsApp(){if(!catalogoDisponible){avisar('No se pudo verificar el catálogo en línea');return;}const vigentes=new Map(productos.map(p=>[p.id,p]));if(carrito.some(x=>!vigentes.has(x.id)||!vigentes.get(x.id).disponible||vigentes.get(x.id).precio===null||x.variante||x.extras?.length)){avisar('Hay productos no disponibles o con opciones sin confirmar. Actualiza el carrito.');return;}carrito=carrito.map(x=>({...x,precio:vigentes.get(x.id).precio,nombre:vigentes.get(x.id).nombre}));actualizarCarrito();const nombre=$('orderName').value.trim(),tel=$('orderPhone').value.trim(),tipo=$('orderType').value,dir=$('orderAddress')?.value.trim()||'',notas=$('orderNotes').value.trim();if(!nombre||!/^\d{10}$/.test(tel.replace(/\D/g,''))){avisar('Escribe tu nombre y celular de 10 dígitos');return}if(tipo==='domicilio'&&!dir){avisar('Escribe la dirección de entrega');return}if($('saveInfo').checked){perfil={nombre,telefono:tel,domicilio:dir||perfil.domicilio||''};guardar('perfil',perfil)}const subtotal=carrito.reduce((s,x)=>s+(x.precio??0)*x.cantidad,0);const detalleProductos=carrito.map(x=>{
-  const importe=dinero(x.precio*x.cantidad);
-  const detalles=[x.variante,...(x.extras||[])].filter(Boolean);
-  return `${x.cantidad} x ${x.nombre} — ${importe}${detalles.length?'\n   Opciones: '+detalles.join(', '):''}${x.notas?'\n   Nota: '+x.notas:''}`;
-}).join('\n\n');
-const msg=[
-  '*EL DULCE SUEÑO*',
-  'COFFEE & DESSERTS',
-  '━━━━━━━━━━━━━━━━━━',
-  '*NUEVO PEDIDO*',
-  '━━━━━━━━━━━━━━━━━━',
-  '',
-  '*PRODUCTOS*',
-  detalleProductos,
-  '',
-  '━━━━━━━━━━━━━━━━━━',
-  `*TOTAL: ${dinero(subtotal)}*`,
-  '━━━━━━━━━━━━━━━━━━',
-  '',
-  '*DATOS DEL CLIENTE*',
-  `Nombre: ${nombre}`,
-  `Celular: ${tel}`,
-  `Modalidad: ${tipo==='recoger'?'Recoger en cafetería':'Servicio a domicilio'}`,
-  ...(dir?[`Dirección: ${dir}`]:[]),
-  '',
-  '━━━━━━━━━━━━━━━━━━',
-  '*OBSERVACIONES*',
-  notas||'Sin observaciones.',
-  '',
-  'Pedido sujeto a confirmación de la cafetería.',
-  'Gracias por elegir El Dulce Sueño.'
-].join('\n');if(CONFIG.whatsapp){window.location.href='https://wa.me/'+CONFIG.whatsapp+'?text='+encodeURIComponent(msg)}else{navigator.clipboard?.writeText(msg).then(()=>avisar('Pedido copiado. Falta configurar WhatsApp oficial.')).catch(()=>prompt('Copia el pedido:',msg));if(!navigator.clipboard)prompt('Copia el pedido:',msg)}}
+async function enviarWhatsApp(){
+  if(!catalogoDisponible){avisar('No se pudo verificar el catálogo en línea');return;}
+  const boton=$('sendOrder');
+  if(boton?.disabled)return;
+  const nombre=$('orderName').value.trim(),tel=$('orderPhone').value.trim(),tipo=$('orderType').value,
+    dir=$('orderAddress')?.value.trim()||'',notas=$('orderNotes').value.trim(),recordar=$('saveInfo').checked;
+  if(!nombre||!/\d{10}$/.test(tel.replace(/\D/g,''))){avisar('Escribe tu nombre y celular de 10 dígitos');return}
+  if(tipo==='domicilio'&&!dir){avisar('Escribe la dirección de entrega');return}
+  boton.disabled=true;boton.textContent='Verificando pedido…';
+  let actuales;
+  try { actuales=await cargarProductos(); }
+  catch(e){console.warn('Verificación final de pedido fallida',e);avisar('No hay conexión para verificar precios. Intenta de nuevo.');boton.disabled=false;boton.textContent='Preparar pedido para WhatsApp';return;}
+  const vigentes=new Map(actuales.map(p=>[p.id,p]));
+  const cambios=carrito.filter(x=>{
+    const p=vigentes.get(x.id);
+    return !p||!p.disponible||p.precio===null||x.variante||(x.extras||[]).length||Number(x.precio)!==Number(p.precio);
+  });
+  if(cambios.length){
+    productos=actuales;revisionPendiente=false;
+    render();pintarPortada();
+    // No modificar precios, cantidades ni productos del carrito sin aceptación.
+    const aviso=document.createElement('div');
+    aviso.className='note';
+    aviso.setAttribute('role','alert');
+    aviso.style.margin='12px 0';
+    aviso.innerHTML='<strong>Revisa los cambios de tu pedido</strong><p>Algunos precios o productos cambiaron desde que abriste el menú. No enviaremos tu pedido hasta que revises los importes vigentes.</p><button class="button" type="button" id="reviewOrderNow">Revisar y actualizar carrito</button>';
+    boton.before(aviso);
+    boton.textContent='Pendiente de revisión';
+    aviso.querySelector('button').onclick=()=>{
+      const faltantes=carrito.filter(x=>{const p=vigentes.get(x.id);return !p||!p.disponible||p.precio===null||x.variante||(x.extras||[]).length;});
+      // Se retiran únicamente con autorización expresa del cliente.
+      carrito=carrito.filter(x=>!faltantes.includes(x)).map(x=>({...x,precio:vigentes.get(x.id).precio,nombre:vigentes.get(x.id).nombre}));
+      actualizarCarrito();
+      renderCarrito();
+      if($('orderType')){
+        $('orderType').value=tipo;
+        renderPerfilPedido();
+        $('orderName').value=nombre;$('orderPhone').value=tel;
+        if($('orderAddress'))$('orderAddress').value=dir;
+        $('orderNotes').value=notas;$('saveInfo').checked=recordar;
+      }
+      avisar(faltantes.length?'Se retiraron productos no disponibles. Revisa tu pedido.':'Precios actualizados. Revisa el total antes de enviar.');
+    };
+    return;
+  }
+  boton.disabled=false;boton.textContent='Preparar pedido para WhatsApp';
+  if(recordar){perfil={nombre,telefono:tel,domicilio:dir||perfil.domicilio||''};guardar('perfil',perfil)}
+  const subtotal=carrito.reduce((s,x)=>s+(x.precio??0)*x.cantidad,0);
+  const detalleProductos=carrito.map(x=>{
+    const importe=dinero(x.precio*x.cantidad);
+    const detalles=[x.variante,...(x.extras||[])].filter(Boolean);
+    return `${x.cantidad} x ${x.nombre} — ${importe}${detalles.length?'\n   Opciones: '+detalles.join(', '):''}${x.notas?'\n   Nota: '+x.notas:''}`;
+  }).join('\n\n');
+  const msg=[
+    '*EL DULCE SUEÑO*','COFFEE & DESSERTS','━━━━━━━━━━━━━━━━━━','*NUEVO PEDIDO*','━━━━━━━━━━━━━━━━━━','',
+    '*PRODUCTOS*',detalleProductos,'','━━━━━━━━━━━━━━━━━━',`*TOTAL: ${dinero(subtotal)}*`,'━━━━━━━━━━━━━━━━━━','',
+    '*DATOS DEL CLIENTE*',`Nombre: ${nombre}`,`Celular: ${tel}`,
+    `Modalidad: ${tipo==='recoger'?'Recoger en cafetería':'Servicio a domicilio'}`,
+    ...(dir?[`Dirección: ${dir}`]:[]),'','━━━━━━━━━━━━━━━━━━','*OBSERVACIONES*',notas||'Sin observaciones.','',
+    'Pedido sujeto a confirmación de la cafetería.','Gracias por elegir El Dulce Sueño.'
+  ].join('\n');
+  if(CONFIG.whatsapp){window.location.href='https://wa.me/'+CONFIG.whatsapp+'?text='+encodeURIComponent(msg)}
+  else{navigator.clipboard?.writeText(msg).then(()=>avisar('Pedido copiado. Falta configurar WhatsApp oficial.')).catch(()=>prompt('Copia el pedido:',msg));if(!navigator.clipboard)prompt('Copia el pedido:',msg)}
+}
 function abrirPerfil(){abrir('Mi perfil',`<p class="muted">Guarda tus datos para no volver a escribirlos en este dispositivo. Al conectar Supabase se habilitará la cuenta segura entre dispositivos.</p><label>Nombre</label><input class="field" id="pName" value="${texto(perfil.nombre||'')}" placeholder="Nombre"><label>Celular</label><input class="field" id="pPhone" type="tel" value="${texto(perfil.telefono||'')}" placeholder="10 dígitos"><label>Domicilio para entregas (opcional)</label><textarea class="field" id="pAddress" rows="3">${texto(perfil.domicilio||'')}</textarea><label class="checkline"><input type="checkbox" id="pPromo" ${leer('promoConsent',false)?'checked':''}>Me interesa recibir promociones (requiere activar notificaciones cuando estén disponibles)</label><button class="button" id="saveProfile">Guardar mis datos</button><p class="muted">Los datos quedan guardados solo en este navegador. No se envían a ningún servidor.</p>`);$('saveProfile').onclick=()=>{const nombre=$('pName').value.trim(),tel=$('pPhone').value.replace(/\D/g,'');if(!nombre||tel.length!==10){avisar('Indica nombre y teléfono de 10 dígitos');return}const primera=!perfil.nombre;perfil={nombre,telefono:tel,domicilio:$('pAddress').value.trim()};guardar('perfil',perfil);guardar('promoConsent',$('pPromo').checked);cerrar();avisar(primera?`¡Bienvenido a la familia de El Dulce Sueño, ${nombre}!`:'Datos actualizados correctamente')}}
 function abrirNotificaciones(){let activo=leer('avisosActivos',false);abrir('Notificaciones',`<p>Controla los avisos de promociones Flash cuando estén disponibles.</p><p class="note">El permiso del teléfono y el envío real de notificaciones se habilitarán al conectar el servicio push. Por ahora solo puedes guardar tu preferencia local.</p><button class="button" id="toggleAlerts">${activo?'Silenciar avisos promocionales':'Activar preferencia de avisos'}</button>`);$('toggleAlerts').onclick=()=>{activo=!activo;guardar('avisosActivos',activo);avisar(activo?'Preferencia activada; falta habilitar push':'Avisos silenciados en este dispositivo');cerrar()}}
 async function flash(){
