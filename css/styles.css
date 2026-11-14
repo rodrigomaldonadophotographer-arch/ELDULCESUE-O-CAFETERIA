@@ -223,3 +223,69 @@ body{padding-bottom:0}
  .visit .visit-photo img{min-height:0;height:310px;object-position:center 43%}
 }
 @media(max-width:380px){.visit .social-links{gap:13px}.visit-info{padding:22px 18px!important}.visit .social-link{width:40px;height:40px;flex-basis:40px}}
+
+
+/* V9 · AJUSTES EXCLUSIVOS DE COMPUTADORA. La experiencia móvil V8 permanece intacta. */
+@media (min-width: 801px) {
+  /* La portada principal se conserva nítida. Solo suavizamos el fondo inferior. */
+  body::before {
+    filter: blur(max(15px, var(--scroll-blur))) brightness(.82) saturate(.78);
+    transform: scale(1.065);
+  }
+  /* Tarjeta de presentación horizontal: compacta y sin espacios sobrantes. */
+  .visit {
+    grid-template-columns: 52% 48%;
+    min-height: 0;
+    height: auto;
+    max-width: 1150px;
+    margin: 26px auto 48px;
+    scroll-margin-top: 94px;
+    align-items: stretch;
+  }
+  .visit-info {
+    padding: 23px 34px 20px !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .visit h2 {
+    font-size: clamp(27px, 2.7vw, 37px);
+    line-height: 1.12;
+    margin: 8px 0 6px;
+  }
+  .visit .visit-intro {
+    font-size: 13px;
+    line-height: 1.35;
+    margin: 0 0 9px;
+  }
+  .visit-detail { padding: 5px 0; gap: 11px; }
+  .visit-detail-icon {
+    flex-basis: 34px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+  }
+  .visit-detail-icon svg { width: 19px; height: 19px; }
+  .visit-detail strong { font-size: 12px; }
+  .visit-detail span:not(.visit-detail-icon),
+  .visit-detail a { font-size: 12px; }
+  .visit .demo-contact-note { margin: 5px 0 0; font-size: 9px; }
+  .visit-social-heading { margin-top: 8px; font-size: 11px; }
+  .visit .social-links { margin-top: 9px; gap: 14px; }
+  .visit .social-link {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    font-size: 23px;
+    border-radius: 9px;
+  }
+  .visit #socialWhatsApp { font-size: 18px; }
+  .visit-photo { min-height: 0; }
+  .visit .visit-photo img {
+    min-height: 0;
+    max-height: 420px;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 47%;
+  }
+}
