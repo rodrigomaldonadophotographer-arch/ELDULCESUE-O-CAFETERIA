@@ -30,7 +30,7 @@ function abrirPerfil(){abrir('Mi perfil',`<p class="muted">Guarda tus datos para
 function abrirNotificaciones(){let activo=leer('avisosActivos',false);abrir('Notificaciones',`<p>Controla los avisos de promociones Flash cuando estén disponibles.</p><p class="note">El permiso del teléfono y el envío real de notificaciones se habilitarán al conectar el servicio push. Por ahora solo puedes guardar tu preferencia local.</p><button class="button" id="toggleAlerts">${activo?'Silenciar avisos promocionales':'Activar preferencia de avisos'}</button>`);$('toggleAlerts').onclick=()=>{activo=!activo;guardar('avisosActivos',activo);avisar(activo?'Preferencia activada; falta habilitar push':'Avisos silenciados en este dispositivo');cerrar()}}
 function flash(){const f=CONFIG.promocionFlash;if(!f)return;const p=productos.find(x=>x.id===f.id);if(!p)return;const vence=new Date(f.vence).getTime();if(!Number.isFinite(vence))return;function tick(){const restante=vence-Date.now();if(restante<=0){$('flashSection').hidden=true;clearInterval(promoTimer);return}$('flashSection').hidden=false;$('flashCountdown').textContent=`Termina en ${Math.floor(restante/3600000)}h ${Math.floor(restante%3600000/60000)}m ${Math.floor(restante%60000/1000)}s`}$('flashTitle').textContent=f.titulo||p.nombre;$('flashDescription').textContent=f.descripcion||'';$('flashPrice').textContent=dinero(f.precio);$('flashImage').src=f.imagen||p.imagen||'assets/local/interior-principal.jpg';$('flashAdd').onclick=()=>ficha(p.id);tick();promoTimer=setInterval(tick,1000)}
 function detalles(){const partes=[];if(CONFIG.horario)partes.push(`<p><b>Horario:</b> ${texto(CONFIG.horario)}</p>`);if(CONFIG.direccion)partes.push(`<p><b>Dirección:</b> ${texto(CONFIG.direccion)}</p>`);for(const [url,label] of [[CONFIG.mapaUrl,'Ver ubicación'],[CONFIG.instagram,'Instagram'],[CONFIG.facebook,'Facebook'],[CONFIG.googleResenas,'Reseñas en Google']])if(url&&/^https:\/\//.test(url))partes.push(`<p><a href="${texto(url)}" target="_blank" rel="noopener noreferrer">${label}</a></p>`);$('businessDetails').innerHTML=partes.join('')||'<p>Horario, dirección y redes sociales: pendientes de confirmar con la cafetería.</p>'}
-async function iniciar(){try{productos=await cargarProductos();render();pintarPortada();flash()}catch(e){$('productGrid').innerHTML='<p>No se pudo cargar el catálogo. Abre el sitio desde GitHub Pages o un servidor local.</p>';console.error(e)}detalles();actualizarCarrito();$('search').oninput=render;$('categories').onclick=e=>{const b=e.target.closest('[data-cat]');if(b){seleccionarCategoria(b.dataset.cat)}};$('productGrid').onclick=e=>{const p=e.target.closest('[data-producto]'),f=e.target.closest('[data-favorito]');if(p)ficha(p.dataset.producto);if(f){const id=f.dataset.favorito;favoritos=favoritos.includes(id)?favoritos.filter(x=>x!==id):[...favoritos,id];guardar('favoritos',favoritos);render()}};$('favoritesFilter').onclick=()=>{soloFavoritos=!soloFavoritos;categoria='Todos';render()};$('heroCategories').onclick=e=>{const b=e.target.closest('[data-hero-cat]');if(b)seleccionarCategoria(b.dataset.heroCat)};$('menuToggle').onclick=()=>$('heroCategories').scrollIntoView({behavior:'smooth',block:'center'});$('bottomFavorites').onclick=()=>{soloFavoritos=true;categoria='Todos';render();$('menu').scrollIntoView({behavior:'smooth'})};$('bottomOrder').onclick=renderCarrito;$('cartBtn').onclick=renderCarrito;$('profileBtn').onclick=abrirPerfil;$('notificationBtn').onclick=abrirNotificaciones;$('closeDrawer').onclick=cerrar;$('overlay').onclick=cerrar;document.addEventListener('keydown',e=>{if(e.key==='Escape')cerrar()});if(mesa)avisar(`Mesa ${mesa} detectada. Pedido interno pendiente de conexión.`)}
+async function iniciar(){try{productos=await cargarProductos();render();pintarPortada();flash()}catch(e){$('productGrid').innerHTML='<p>No se pudo cargar el catálogo. Abre el sitio desde GitHub Pages o un servidor local.</p>';console.error(e)}detalles();actualizarCarrito();$('search').oninput=render;$('categories').onclick=e=>{const b=e.target.closest('[data-cat]');if(b){seleccionarCategoria(b.dataset.cat)}};$('productGrid').onclick=e=>{const p=e.target.closest('[data-producto]'),f=e.target.closest('[data-favorito]');if(p)ficha(p.dataset.producto);if(f){const id=f.dataset.favorito;favoritos=favoritos.includes(id)?favoritos.filter(x=>x!==id):[...favoritos,id];guardar('favoritos',favoritos);render()}};$('favoritesFilter').onclick=()=>{soloFavoritos=!soloFavoritos;categoria='Todos';render()};$('heroCategories').onclick=e=>{const b=e.target.closest('[data-hero-cat]');if(b)seleccionarCategoria(b.dataset.heroCat)};$('menuToggle').onclick=()=>$('explorar').scrollIntoView({behavior:'smooth',block:'start'});$('bottomFavorites').onclick=()=>{soloFavoritos=true;categoria='Todos';render();$('menu').scrollIntoView({behavior:'smooth'})};$('bottomOrder').onclick=renderCarrito;$('cartBtn').onclick=renderCarrito;$('profileBtn').onclick=abrirPerfil;$('notificationBtn').onclick=abrirNotificaciones;$('closeDrawer').onclick=cerrar;$('overlay').onclick=cerrar;document.addEventListener('keydown',e=>{if(e.key==='Escape')cerrar()});if(mesa)avisar(`Mesa ${mesa} detectada. Pedido interno pendiente de conexión.`)}
 iniciar();
 
 
@@ -47,3 +47,27 @@ iniciar();
   window.addEventListener('resize',actualizar,{passive:true});
   actualizar();
 })();
+
+// Instalación PWA: el navegador decide cuándo permite mostrar la solicitud.
+let solicitudInstalacion=null;
+window.addEventListener('beforeinstallprompt',event=>{
+  event.preventDefault();
+  solicitudInstalacion=event;
+  const boton=document.getElementById('installAppBtn');
+  if(boton)boton.hidden=false;
+});
+window.addEventListener('appinstalled',()=>{
+  solicitudInstalacion=null;
+  const boton=document.getElementById('installAppBtn');
+  if(boton)boton.hidden=true;
+});
+document.getElementById('installAppBtn')?.addEventListener('click',async()=>{
+  if(!solicitudInstalacion)return;
+  const solicitud=solicitudInstalacion;
+  solicitudInstalacion=null;
+  document.getElementById('installAppBtn').hidden=true;
+  await solicitud.prompt();
+});
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(console.warn));
+}
