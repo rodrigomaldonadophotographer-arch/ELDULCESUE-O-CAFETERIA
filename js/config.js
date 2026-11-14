@@ -1,7 +1,9 @@
 // CONFIGURACIÓN DEL NEGOCIO: completar antes de entregar al cliente.
 export const CONFIG = {
-  negocioId: 'el-dulce-sueno', // sustituir por UUID real de bd_negocios al conectar
+  negocioId: '85e8e8a1-ad39-45d5-b5a0-f542b0c5dac8', // UUID real del negocio
   nombre: 'El Dulce Sueño',
+  supabaseUrl: 'https://epxbvaeantfeduhkolal.supabase.co',
+  supabasePublishableKey: 'sb_publishable_jVso9pjnYOF-X6nBHDNEZg_IOurDgJ7',
   whatsapp: '', // 521XXXXXXXXXX sin +, espacios ni guiones; NO inventar
   direccion: '', // confirmar con la propietaria
   mapaUrl: '',
