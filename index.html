@@ -13,8 +13,23 @@
 <section class="category-showcase" id="explorar" aria-label="Explorar categorías"><div class="category-intro"><span>COFFEE & DESSERTS</span><h2>Descubre nuestros sabores</h2></div><div class="hero-categories" id="heroCategories"></div></section>
 
 <section class="flash" id="flashSection" hidden><div class="flash-header"><span>PROMOCIÓN FLASH</span><strong id="flashCountdown"></strong></div><div class="flash-body"><img id="flashImage" alt="Promoción del día"><div><h2 id="flashTitle"></h2><p id="flashDescription"></p><strong id="flashPrice"></strong><button id="flashAdd" class="button">Ver promoción</button></div></div></section>
-<section class="catalog" id="menu"><div class="section-heading"><span class="eyebrow dark">COFFEE & DESSERTS</span><h2>Nuestro menú</h2><p>Elige tus favoritos, personalízalos y disfruta.</p></div><div class="catalog-tools"><input id="search" type="search" placeholder="Buscar bebida o postre…" aria-label="Buscar productos"><button id="favoritesFilter" class="filter-btn" aria-pressed="false">♡ Favoritos</button></div><nav class="categories" id="categories" aria-label="Categorías del menú"></nav><div id="productGrid" class="product-grid"></div><p class="scroll-hint">Desliza para descubrir más especialidades</p></section>
-<section class="visit" id="visitanos"><div><span class="eyebrow dark">VISÍTANOS</span><h2>Te esperamos en El Dulce Sueño</h2><p>Un espacio pequeño, acogedor y preparado con cariño para ti.</p><div id="businessDetails"></div></div><img src="assets/local/interior-vitrina.jpg" alt="Interior real de El Dulce Sueño, su barra y sus mesas" loading="lazy"></section>
+<section class="catalog" id="menu"><div class="section-heading"><span class="eyebrow dark">COFFEE & DESSERTS</span><h2>Nuestro menú</h2><p>Elige tus favoritos, personalízalos y disfruta.</p></div><div class="catalog-tools"><input id="search" type="search" placeholder="Buscar bebida o postre…" aria-label="Buscar productos"><button id="favoritesFilter" class="filter-btn" aria-pressed="false">♡ Favoritos</button></div><nav class="categories" id="categories" aria-label="Categorías del menú"></nav><div id="productGrid" class="product-grid"></div><nav id="categoryNext" class="category-next" aria-label="Continuar explorando"></nav><p class="scroll-hint">Desliza para descubrir más especialidades</p></section>
+<section class="visit" id="visitanos" aria-label="Ubicación y contacto de El Dulce Sueño">
+  <div class="visit-info">
+    <div class="visit-eyebrow"><span>VISÍTANOS</span></div>
+    <h2>Te esperamos en<br>El Dulce Sueño</h2>
+    <p class="visit-intro">Un espacio pequeño, acogedor y preparado con cariño para ti.</p>
+    <div id="businessDetails" class="visit-details"></div>
+    <div class="visit-social-heading"><span>Síguenos en nuestras redes sociales</span></div>
+    <div class="social-links" aria-label="Redes sociales y contacto">
+      <a class="social-link social-facebook" id="socialFacebook" href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook (enlace de muestra)" title="Facebook · enlace de muestra">f</a>
+      <a class="social-link social-instagram" id="socialInstagram" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram (enlace de muestra)" title="Instagram · enlace de muestra">◎</a>
+      <a class="social-link social-tiktok" id="socialTikTok" href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer" aria-label="TikTok (enlace de muestra)" title="TikTok · enlace de muestra">♪</a>
+      <a class="social-link social-whatsapp" id="socialWhatsApp" href="https://wa.me/523113392436" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp (número de muestra)" title="WhatsApp · número de muestra"><svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.3 7.6L3 20.5l1.4-5A8.5 8.5 0 1 1 20.5 11.6Z"/><path d="M8.5 8.5c.5-.5.9-.3 1.1.2l.8 1.5c.1.3 0 .6-.4.9l-.4.4a7 7 0 0 0 3 3l.5-.5c.3-.3.6-.4.9-.2l1.5.8c.6.3.7.7.2 1.2-.7.7-1.4.9-2.3.6-2.7-.8-5.1-3.1-5.8-5.8-.2-.8 0-1.5.9-2.1Z"/></svg></a>
+    </div>
+  </div>
+  <div class="visit-photo"><img src="assets/local/interior-vitrina.jpg" alt="Fotografía real del interior de El Dulce Sueño con clientes, barra y mesas" loading="lazy"></div>
+</section>
 </main>
 <footer><span>EL DULCE SUEÑO · COFFEE & DESSERTS</span><span>Menú digital por Barrio Digital</span><button id="notificationBtn" class="text-button">Notificaciones: configurar</button><button id="installAppBtn" class="text-button" hidden>Instalar aplicación</button></footer>
 <div id="overlay" class="overlay" hidden></div><aside id="drawer" class="drawer" aria-label="Detalle" aria-modal="true" role="dialog" hidden><div class="drawer-head"><h2 id="drawerTitle">Detalle</h2><button id="closeDrawer" class="icon-btn" aria-label="Cerrar">✕</button></div><div id="drawerBody" class="drawer-body"></div></aside>
