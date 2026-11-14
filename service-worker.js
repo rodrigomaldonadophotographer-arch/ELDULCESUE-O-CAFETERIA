@@ -1,9 +1,9 @@
 /* El Dulce Sueño · PWA V16. Nunca almacena respuestas de Supabase. */
-const VERSION = 'dulce-sueno-v16-auto-20261114';
+const VERSION = 'dulce-sueno-v17-datos-20261114';
 const BASICOS = [
   './', './index.html', './css/styles.css', './js/app.js',
   './js/catalogo.js', './js/promociones.js', './js/config.js',
-  './js/integraciones.js', './js/storage.js', './js/actualizador.js',
+  './js/integraciones.js', './js/storage.js', './js/actualizador.js', './js/sincronizar-catalogo.js',
   './data/productos.json', './manifest.webmanifest',
   './assets/local/portada-cafeteria.png',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png',
