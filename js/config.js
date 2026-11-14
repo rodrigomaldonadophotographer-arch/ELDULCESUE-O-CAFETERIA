@@ -4,8 +4,10 @@ export const CONFIG = {
   nombre: 'El Dulce Sueño',
   supabaseUrl: 'https://epxbvaeantfeduhkolal.supabase.co',
   supabasePublishableKey: 'sb_publishable_jVso9pjnYOF-X6nBHDNEZg_IOurDgJ7',
-  whatsapp: '', // 521XXXXXXXXXX sin +, espacios ni guiones; NO inventar
-  direccion: '', // confirmar con la propietaria
+  whatsapp: '523113392436', // Numero de prueba autorizado; cambiar por el oficial al entregar
+  direccion: 'Av. México 1000 Sur, Col. Centro, Tepic, Nayarit (domicilio de muestra)',
+  telefonoMuestra: '+52 311 339 2436',
+  correoMuestra: 'contacto@eldulcesueno.com', // Correo ficticio, no habilitado
   mapaUrl: '',
   horario: '',
   instagram: '',
